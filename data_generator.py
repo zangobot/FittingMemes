@@ -6,6 +6,9 @@ from skimage.transform import resize
 from scipy import signal
 from sklearn.model_selection import StratifiedShuffleSplit
 
+# file * --mime-type | grep html | awk '{print $1}' | tr -d ":" | xargs rm
+# Use this command to remove images which are downloaded as html
+
 def generate_mapping():
     classes = {}
     data = []
@@ -17,7 +20,7 @@ def generate_mapping():
         data.append([file, assigned_class])
     return data, classes
 
-def create_dataset(data, n_classes, subsample=1, persistance = True):
+def create_dataset(data, n_classes, persistance = True):
     X, Y = [], []
     if os.path.isfile('train_data') and os.path.isfile('train_labels'):
         with open('train_data','rb') as tr_data:
@@ -42,14 +45,17 @@ def create_dataset(data, n_classes, subsample=1, persistance = True):
             with open('train_labels','wb') as tr_label:
                 pickle.dump(Y, tr_label)
 
+    
+    return X, Y
+
+
+def train_test_split(test_size = 0.25, subsample=1, persistance= True, X=None, Y = None):
+    if X is None or Y is None:
+        data, classes = generate_mapping()
+        X, Y = create_dataset(data, len(classes), persistance=persistance)
     subsize = int(subsample * len(Y))
     choice = np.random.choice( range(len(Y)),subsize)
-    return X[choice], Y[choice]
-
-
-def train_test_split(test_size = 0.25, subsample=1, persistance= True):
-    data, classes = generate_mapping()
-    X, Y = create_dataset(data, len(classes), subsample=subsample, persistance=persistance)
+    X, Y = X[choice], Y[choice]
     stratsplit =  StratifiedShuffleSplit(10, test_size=test_size)
     for tr_index, ts_index in stratsplit.split(X,Y):
         X_train, Y_train = X[tr_index], Y[tr_index]
